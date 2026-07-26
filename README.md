@@ -27,18 +27,7 @@ and reports the complete story the moment it comes back online.*
 
 ---
 
-## Screenshots
 
-> Replace these placeholders with your own Serial Monitor / Wokwi screenshots
-> before submitting. See `test_reading.md` for the exact scenarios to capture.
-
-| Scenario | Screenshot |
-|---|---|
-| Normal operation | `screenshots/01_normal.png` |
-| Breach alarm triggering | `screenshots/02_alarm.png` |
-| Stuck-sensor fault state | `screenshots/03_fault.png` |
-| Offline buffering | `screenshots/04_offline.png` |
-| Reconnect & flush (oldest-first) | `screenshots/05_reconnect.png` |
 
 ---
 
