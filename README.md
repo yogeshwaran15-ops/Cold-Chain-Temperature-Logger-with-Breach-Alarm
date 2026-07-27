@@ -27,7 +27,18 @@ and reports the complete story the moment it comes back online.*
 
 ---
 
+## Screenshots
 
+> Replace these placeholders with your own Serial Monitor / Wokwi screenshots
+> before submitting. See `test_reading.md` for the exact scenarios to capture.
+
+| Scenario | Screenshot |
+|---|---|
+| Normal operation | `screenshots/01_normal.png` |
+| Breach alarm triggering | `screenshots/02_alarm.png` |
+| Stuck-sensor fault state | `screenshots/03_fault.png` |
+| Offline buffering | `screenshots/04_offline.png` |
+| Reconnect & flush (oldest-first) | `screenshots/05_reconnect.png` |
 
 ---
 
@@ -56,6 +67,25 @@ This average is what the breach logic checks against the safe range (2–8°C),
 not the raw value — so one bad sample can't trigger a false alarm, but a real
 sustained excursion still pulls the average out of range within a few samples.
 
+### Second derived figure: Temperature Drift
+
+**Formula:**
+```
+drift = smoothed_now - smoothed_previous
+```
+
+**Worked example** (Signal B, genuine excursion, samples 3→4 from `test_reading.md`):
+```
+smoothed at sample 3: 7.64
+smoothed at sample 4: 8.86
+drift = 8.86 - 7.64 = 1.22 °C per 5 s
+```
+A positive, growing drift like this warns that the box is heating up fast,
+before the alarm even fires — useful for spotting a slow-failing seal ahead
+of a full breach. This value is calculated in code but was not previously
+shown on screen; it now prints as `[DRIFT] +1.22 C since last sample` and
+updates every sampling cycle as the injected temperature changes.
+
 ---
 
 ## What Each Field Means (Serial Monitor / Log Output)
@@ -64,7 +94,10 @@ sustained excursion still pulls the average out of range within a few samples.
 |---|---|
 | `[RAW]` | The unfiltered value read directly from the DS18B20 sensor this cycle |
 | `[SMOOTHED]` | The 5-sample moving average calculated from the last 5 raw readings |
-| `[FAULT]` | Sensor is not trustworthy right now (stuck for 6+ readings, or outside -20…60°C) — decision logic is skipped this cycle |
+| `[DRIFT]` | Change in smoothed temperature since the previous sample (°C per 5 s). Positive means warming, negative means cooling. Calculated but not previously shown - it flags a fast-warming box before it fully breaches the safe range |
+| `[FAULT]` | Sensor reading rejected outright — either an impossible value (outside -20°C to 60°C, or the DallasTemperature -127°C disconnect code) or stuck (6+ identical readings). The reading is never smoothed, never checked against the safe range, and never stored |
+| `[HOLD]` | Shown while faulted: the last trustworthy smoothed value, which the system continues to treat as current rather than reacting to the bad reading |
+| `[FAULT CLEARED]` | Sensor has produced a good reading again; normal processing resumes from the next sample |
 | `[ALARM]` | The smoothed temperature has stayed outside 2–8°C for 3 consecutive readings — buzzer is on |
 | `[ALARM CLEARED]` | Smoothed temperature has returned to the safe range |
 | `[OFFLINE] buffering, count=N` | Network unavailable; reading N is being held in memory with its original timestamp |
@@ -80,6 +113,7 @@ sustained excursion still pulls the average out of range within a few samples.
 - 5-sample moving average smooths isolated spikes without hiding real excursions
 - Local breach alarm fires after 3 consecutive out-of-range readings, entirely independent of network state
 - Stuck-sensor detection (6 identical consecutive raw readings) enters a fault state and skips acting on bad data
+- Impossible readings (outside -20°C to 60°C, or the DallasTemperature -127°C error code) are rejected on the very first occurrence — no averaging in, no alarm impact, no storage; the system holds its last trustworthy value until good readings resume
 - Store-and-forward: readings are timestamped at the moment they're read, buffered while offline, and flushed oldest-first on reconnection with no gaps
 - All 5 required test cases (normal, excursion, noisy, stuck sensor, network outage/reconnect) pass — see `test_reading.md`
 
