@@ -14,12 +14,12 @@
   "connections": [
     [ "esp:3V3", "ds18b20:VCC", "red", [ "v0" ] ],
     [ "esp:GND.1", "ds18b20:GND", "black", [ "v0" ] ],
-    [ "ds18b20:SIG", "esp:D4", "green", [ "v0" ] ],
-    [ "ds18b20:SIG", "r_pullup:1", "green", [ "v0" ] ],
+    [ "ds18b20:DQ", "esp:D4", "green", [ "v0" ] ],
+    [ "ds18b20:DQ", "r_pullup:1", "green", [ "v0" ] ],
     [ "r_pullup:2", "esp:3V3", "red", [ "v0" ] ],
 
-    [ "buzzer1:1", "esp:D25", "orange", [ "v0" ] ],
-    [ "buzzer1:2", "esp:GND.1", "black", [ "v0" ] ],
+    [ "buzzer1:1", "esp:GND.1", "black", [ "v0" ] ],
+    [ "buzzer1:2", "esp:D25", "orange", [ "v0" ] ],
 
     [ "btn_network:1.l", "esp:D27", "blue", [ "v0" ] ],
     [ "btn_network:2.l", "esp:GND.2", "black", [ "v0" ] ],
