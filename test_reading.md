@@ -132,9 +132,40 @@ Result: stuck run correctly enters fault state and decision logic is skipped. PA
 [RAW] 5.00
 [RAW] 5.00
 [RAW] 5.00
-[FAULT] sensor reading not trustworthy - not acting on it
+[FAULT] Reading rejected (stuck (same value repeated)) - NOT treated as a real measurement.
 Result: fault declared on 6th identical reading; no breach/alarm logic executed while faultState=true. PASS.
 ```
+
+### Case 4b: Impossible Value (Broken Sensor)
+
+Design decision: any reading outside -20°C to 60°C, or the DallasTemperature
+library's own -127°C disconnect code, is physically impossible for a box in
+transit and is rejected outright — it is never smoothed, never compared to
+the safe range, and never stored.
+
+Demonstration: hold a normal reading for a few samples so an alarm state
+exists to protect, then drag the DS18B20 slider to its maximum (125°C, an
+impossible reading for this application):
+```
+[RAW] 4.20
+[SMOOTHED] 4.15
+[DRIFT] +0.05 C since last sample
+[RAW] 4.30
+[SMOOTHED] 4.19
+[DRIFT] +0.04 C since last sample
+[RAW] 125.00
+[FAULT] Reading rejected (impossible value (outside physical range)) - NOT treated as a real measurement.
+[HOLD] last trustworthy value still stands: 4.19
+[RAW] 4.10
+[FAULT CLEARED] sensor recovered after 1 rejected reading(s).
+[SMOOTHED] 4.17
+[DRIFT] -0.02 C since last sample
+```
+Result: the impossible 125.00°C value never appears in `[SMOOTHED]`, never
+advances `outOfRangeStreak`, never triggers `[ALARM]`, and is never buffered
+by `storeReading()`. The system holds the last trustworthy value (4.19°C)
+and resumes normal processing on the very next good reading. No false alarm
+is produced by a single broken reading. PASS.
 
 ### Case 5: Network Outage → Reconnection
 ```
@@ -162,6 +193,7 @@ Result: alarm worked fully offline; all 4 readings recovered in original order w
 | 2. Excursion | ✅ (fires at 3rd breach) | ✅ | ✅ |
 | 3. Noisy | ✅ (spike filtered) | ✅ (stuck run caught) | ✅ |
 | 4. Stuck sensor | N/A | ✅ (fault at 6th repeat) | ✅ (no bad data stored) |
+| 4b. Impossible value | ✅ (no false alarm, prior state held) | ✅ (rejected immediately, one reading is enough) | ✅ (never smoothed or buffered) |
 | 5. Network outage | ✅ (local, no network) | N/A | ✅ (oldest-first, no gaps) |
 
 All five cases pass with the current sampling interval (5 s), breach threshold (3
